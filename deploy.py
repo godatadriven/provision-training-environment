@@ -45,7 +45,7 @@ def add_keys_to(instance_tag, key_path, zone):
 def get_ip_of(instance_tag):
     # TODO This method could be optional
     c = delegator.run(('gcloud --format="value(networkInterfaces[0].accessConfigs[0].natIP)" '
-                       'compute instances list %s') % instance_tag)
+                       'compute instances list --filter="name=(%s)"') % instance_tag)
     external_ip = c.out.strip()
     if c.err:
         raise GCloudError(c.err)
