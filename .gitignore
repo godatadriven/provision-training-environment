@@ -92,3 +92,6 @@ keys
 playbook.retry
 gcloud_ansible*
 roles/bootstrap/files/notebooks/*
+cdh/ansible/roles/java/files/jdk*
+cdh/*.pem
+
