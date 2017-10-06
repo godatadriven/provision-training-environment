@@ -1,0 +1,45 @@
+---
+- name: install mysql server
+  yum: name=mysql-server state=present update_cache=yes
+
+- name: Configure mysql
+  template: src=my.cnf.tmpl dest=/etc/my.cnf owner=root group=root mode=0644
+  with_indexed_items: "{{ groups['tag_mysql_master'] }}"
+  # with_indexed_items: "{{ groups['tag_mysql_master'] + groups['tag_mysql_slave'] }}"
+  when: item.1 == inventory_hostname
+
+- name: Start mysql
+  systemd: name=mysqld state=started enabled=yes
+
+- name: mysql_secure_server. Set root password
+  shell: mysql -e "UPDATE mysql.user SET Password=PASSWORD('{{ mysql_root_password }}') WHERE User='root';"
+
+#mysql -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+- name: mysql_secure_server. Delete anonymous users
+  shell: mysql -e "DELETE FROM mysql.user WHERE User='';"
+
+- name: mysql_secure_server. Drop test database
+  shell: mysql -e "DROP DATABASE IF EXISTS test;"
+
+- name: mysql_secure_server. Drop test database privileges
+  shell: mysql -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+
+- name: mysql_secure_server. Flush privileges
+  shell: mysql -e "FLUSH PRIVILEGES;"
+
+- name: set root pwd to make ansible tasks idempotent
+  template: src=root.my.cnf.tmpl dest=/root/.my.cnf owner=root group=root mode=0400
+
+- name: ReStart mysql
+  systemd: name=mysqld state=restarted
+
+- name: setup cm databases
+  shell: mysql -e "create database if not exists {{ item.db }} DEFAULT CHARACTER SET utf8; grant all on {{ item.db }}.* TO '{{ item.user }}'@'%' IDENTIFIED BY '{{ item.passwd }}';"
+  with_items:
+  - { db: 'scm', user: 'scm', passwd: 'scm123' }
+  - { db: 'rman', user: 'rman', passwd: 'rman123' }
+  - { db: 'hive', user: 'hive', passwd: 'hive123' }
+  - { db: 'oozie', user: 'oozie', passwd: 'oozie123' }
+  - { db: 'hue', user: 'hue', passwd: 'hue123' }
+  - { db: 'sentry', user: 'sentry', passwd: 'sentry123' }
+  

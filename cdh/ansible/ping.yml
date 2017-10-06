@@ -1,0 +1,78 @@
+# ---
+# - hosts: all
+#   user: centos
+#   gather_facts: no
+#   tasks:
+#   - name: ping all hosts
+#     ping:
+
+#   # - name: show diskspace on node
+#   #   command: df -h 
+
+# - hosts: tag_Name_master
+#   user: centos
+#   gather_facts: no
+#   tasks:
+#   - name: ping master node
+#     ping:
+
+- hosts: tag_mysql_master
+  user: centos
+  gather_facts: no
+  tasks:
+  - name: ping mysql master node
+    ping:
+
+- hosts: tag_cloudera_master
+  user: centos
+  gather_facts: no
+  tasks:
+  - name: ping cloudera master node
+    ping:
+
+# - hosts: all
+#   user: ec2-user
+#   gather_facts: no
+#   become: yes
+#   become_method: sudo
+#   tasks:
+
+#   - name: remove wrong version of mysql server
+#     yum: name=mysql* state=absent update_cache=yes
+
+# - hosts: tag_mysql_slave
+#   user: centos
+#   gather_facts: no
+#   tasks:
+#   - name: ping mysql slave node
+#     ping:
+
+- hosts: all
+  user: centos
+  gather_facts: yes
+  tasks:
+  - name: ping all
+    ping:
+
+  - name: get internal ip
+    debug: var="{{ ansible_eth0.ipv4.address }}"
+
+  # - debug: msg="{{ hostvars[hostvars[inventory_hostname]['groups']['tag_mysql_master'][0]]['ansible_fqdn'] }}"
+ 
+  # - debug: msg="{{ hostvars[hostvars[inventory_hostname]['groups']['tag_cloudera_master'][0]]['ansible_fqdn'] }}"
+
+  # - debug: msg="{{ hostvars[groups['tag_mysql_master'][0]]['ansible_fqdn'] }}"
+ 
+  # - debug: msg="{{ hostvars[groups['tag_cloudera_master'][0]]['ansible_fqdn'] }}"
+
+  # - debug: msg="{{ hostvars[inventory_hostname]['ansible_fqdn'] }}"
+ 
+  # - debug: msg="{{ inventory_hostname }}"
+ # - name: Install packages
+ #  package:
+ #    name: "{{ item }}"
+ #    state: absent
+ #  with_items: 
+ #    - MySQL-python
+ #  tags: mariadb
+

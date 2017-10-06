@@ -1,0 +1,65 @@
+---
+- hosts: all
+  user: centos
+  tasks:
+
+    - name: Create exercise directories
+      file: path=/notebooks/{{ item.dir }} state=directory owner=centos group=centos mode={{ item.mode }}
+      with_items:
+        - { dir: exercises/images, mode: 775 }
+        - { dir: solutions/images, mode: 775 }
+        - { dir: data, mode: 777 }
+
+    - name: Extract data
+      unarchive: src=https://misc-godatadriven.s3.amazonaws.com/ds-spark-data.zip validate_certs=no remote_src=yes dest=/notebooks/data
+
+    - name: Get exercise notebooks
+      copy: src=notebooks/{{ item}} dest=/notebooks/exercises
+      with_items:
+        - 2-01-A-dataframes-basics.ipynb
+        - 2-02-A-dataframes-functions.ipynb
+        - 2-03-A-dataframes-windows.ipynb
+        - 2-04-E-dataframes-windows.ipynb
+
+    - name: Get solution notebooks
+      copy: src=notebooks/{{ item}} dest=/notebooks/solutions
+      with_items:
+        - 2-01-S-dataframes-basics.ipynb
+        - 2-02-S-dataframes-functions.ipynb
+        - 2-03-S-dataframes-windows.ipynb
+        - 2-04-S-dataframes-windows.ipynb
+
+    - name: Get exercise images
+      copy: src=notebooks/images/{{ item}} dest=/notebooks/exercises/images
+      with_items:
+        - partitions.png
+        - partitioning.png
+        - dataframe-api-speed.png
+
+    - name: Get solution images
+      copy: src=notebooks/images/{{ item}} dest=/notebooks/solutions/images
+      with_items:
+        - partitions.png
+        - partitioning.png
+        - dataframe-api-speed.png
+
+    - name: Stop jupyter
+      shell: pkill jupyter
+      ignore_errors: yes
+
+    - name: Start jupyter
+      shell: nohup /home/centos/start-jupyter.sh >> /home/centos/jupyter.log &
+
+- hosts: tag_cloudera_master
+  user: centos
+  tasks:
+
+    - name: Create HDFS home dir
+      shell: sudo su - hdfs -c "hdfs dfs -mkdir /user/centos"
+      ignore_errors: yes
+
+    - name: Chown centos user HDFS
+      shell: sudo su - hdfs -c "hdfs dfs -chown centos:centos /user/centos"
+      
+    - name: Put data on HDFS
+      shell: sudo su - hdfs -c "hdfs dfs -put /notebooks/data /user/centos"

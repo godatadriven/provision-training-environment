@@ -1,0 +1,13 @@
+- hosts: tag_cloudera_master
+  user: centos
+  become: yes
+  become_method: sudo
+  tasks:
+
+  - name: Add spark2 CSD file
+    copy: src=SPARK2_ON_YARN-2.2.0.cloudera1.jar dest=/opt/cloudera/csd/ owner=cloudera-scm group=cloudera-scm mode=0644
+
+  - name: restart cloudera manager services
+    systemd: name=cloudera-scm-server state=restarted
+
+

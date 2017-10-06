@@ -1,0 +1,23 @@
+---
+- name: Set cloudera yum repo
+  copy: src=cloudera-5.repo dest=/etc/yum.repos.d/cloudera-manager.repo owner=root group=root mode=0644
+  when: "'tag_cloudera_master' in group_names"
+
+- name: install cloudera manager software
+  yum: name={{ item }} state=present update_cache=yes
+  with_items:
+  - cloudera-manager-daemons
+  - cloudera-manager-server
+  when: "'tag_cloudera_master' in group_names"
+
+- name: stop cloudera manager
+  systemd: name=cloudera-scm-server state=stopped
+  when: "'tag_cloudera_master' in group_names"
+
+- name: setup the database connection for cm                    
+  shell: /usr/share/cmf/schema/scm_prepare_database.sh mysql -h "{{ hostvars[groups['tag_mysql_master'][0]]['ansible_fqdn'] }}" --scm-host "{{ ansible_fqdn }}" scm scm scm123
+  when: "'tag_cloudera_master' in group_names"
+
+- name: start cloudera manager
+  systemd: name=cloudera-scm-server state=started enabled=yes 
+  when: "'tag_cloudera_master' in group_names"

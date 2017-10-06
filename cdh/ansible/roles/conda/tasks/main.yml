@@ -1,0 +1,34 @@
+- name: Get installer
+  get_url: url=https://repo.continuum.io/archive/Anaconda2-5.0.0-Linux-x86_64.sh dest=/tmp/ mode=755
+
+- name: Start with clean slate
+  file: path={{ item }} state=absent
+  with_items:
+    - /anaconda
+    - /home/centos/.jupyter
+
+- name: Install needed packages
+  yum: name={{ item }} state=latest
+  with_items:
+    - bzip2
+    - glibc
+    - zip
+    - unzip
+
+- name: Execute installer
+  shell: /tmp/Anaconda2-5.0.0-Linux-x86_64.sh -b -p /anaconda creates=/anaconda/bin executable=/bin/bash
+
+- name: Install findspark
+  shell: /anaconda/bin/pip install jupyter[all] findspark
+
+- name: create notebook dir
+  file: path={{ item }} state=directory owner=centos group=centos mode=775
+  with_items:
+    - /notebooks
+    - /home/centos/.jupyter
+
+- name: Configure jupyter notebook
+  copy: src=jupyter_notebook_config.py dest=/home/centos/.jupyter/ owner=centos group=centos mode=755
+
+- name: Copy jupyter start script
+  copy: src=start-jupyter.sh dest=/home/centos/ owner=centos group=centos mode=775

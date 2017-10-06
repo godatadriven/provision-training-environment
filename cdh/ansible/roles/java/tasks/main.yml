@@ -1,0 +1,53 @@
+---
+# - name: Get Oracle JDK 1.8
+#   get_url:
+#     url: http://download.oracle.com/otn/java/jdk/8u121-b13/jdk-8u121-linux-x64.rpm?AuthParam=1502391901_26bd0bd320be0c44c48c6ef9d64e7386
+#     headers: 'Cookie:oraclelicense=accept-securebackup-cookie'
+#     validate_certs: no
+#     dest: /tmp/
+# - name: Get Oracle JDK 1.8
+#   get_url:
+#     url: http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.rpm
+#     headers: 'Cookie:oraclelicense=accept-securebackup-cookie'
+#     validate_certs: no
+#     dest: /tmp/
+# - name: Get Oracle JDK 1.8
+#   get_url:
+#     url: http://download.oracle.com/otn-pub/java/jdk/8u121-b13/e9e7ea248e2c4826b92b3f075a80e441/jdk-8u121-linux-x64.rpm
+#     headers: 'Cookie:oraclelicense=accept-securebackup-cookie'
+#     validate_certs: no
+#     dest: /tmp/
+
+# - name: Install Oracle JDK 1.8
+#   yum: name=/tmp/jdk-8u111-linux-x64.rpm state=present
+
+- name: Copy rpm to remote
+  copy: src=jdk-8u121-linux-x64.rpm dest=/tmp/ owner=root group=root mode=0755
+
+- name: remove openjdk java
+  yum: name=java-1.8.0-openjdk state=absent
+
+- name: remove alternatives to openjdk
+  shell: update-alternatives --remove {{ item.name }} {{ item.path }}
+  with_items:
+  - { name: java, path: /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.141-1.b16.el7_3.x86_64/jre/bin/java }
+  - { name: jre, path: /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.141-1.b16.el7_3.x86_64/jre }
+  - { name: jre_openjdk, path: /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.141-1.b16.el7_3.x86_64/jre }
+  - { name: jre_1.8.0, path: /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.141-1.b16.el7_3.x86_64/jre }
+  - { name: jre_1.8.0_openjdk, path: /usr/lib/jvm/jre-1.8.0-openjdk-1.8.0.141-1.b16.el7_3.x86_64 }
+  ignore_errors: True
+
+- name: Install Oracle JDK 1.8
+  yum: name=/tmp/jdk-8u121-linux-x64.rpm state=present
+
+- name: Copy files to JAVA_HOME
+  copy: src=files/UnlimitedJCEPolicyJDK8/{{ item }} dest=/usr/java/jdk1.8.0_121/jre/lib/security/{{ item }}
+  with_items:
+  - local_policy.jar
+  - US_export_policy.jar
+
+- name: Install mysql connector again
+  yum: name=mysql-connector-java state=present
+
+- name: Install mysql python
+  yum: name=MySQL-python state=present

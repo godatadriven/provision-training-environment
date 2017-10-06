@@ -1,0 +1,45 @@
+notes Cloudera Spark Dataframes training GoDataFest
+
+10 machines m3.2xlarge
+ami-061b1560
+
+50GB SSD storage 
+
+secgroup launch-wizard1
+sebc pem
+
+workon sebc
+ansible-playbook bootstrap.yml
+ansible-playbook java.yml
+ansible-playbook mysql.yml
+ansible-playbook cm.yml
+
+ansible-playbook --private-key ../sebc.pem ping.yml to get the internal ip's to fill in in the search box of CM
+
+set user: centos and add key
+
+cluster:
+
+namenode: CM chosen
+secondary NN: mysql_master
+balancer: CM chosen
+Datanode: All but NN+Mysql_master
+HDFS Gateway: All
+Hive metastore + Hiveserver: Mysql_master
+HUE + LB: Mysql_master
+CM services: Mysql_master
+OOzie: CM chosen
+Spark History: Random other
+Yarn Job History: Same as Spark history
+Zookeeper: Mysql_master + NN + Spark History
+
+## Installing Spark2
+ansible-playbook spark2.yml
+Restart Cloudera Management services (UI)
+Parcel activate
+
+Install Spark2 (Add service)
+Spark2 History server: Random host other then Spark21 History
+
+ansible-playbook conda.yml
+ansible-playbook start-jupyter.yml
