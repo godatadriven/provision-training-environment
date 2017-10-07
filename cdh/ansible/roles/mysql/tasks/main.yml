@@ -13,15 +13,6 @@
 - name: install mysql repo
   yum: name=/tmp/mysql-community-release-el7-5.noarch.rpm state=present
 
-# - name: disable default enabled mysql repo version
-#   command: yum-config-manager --disable mysql57-community
-
-# - name: disable default enabled mysql repo version
-#   command: yum-config-manager --disable mysql56-community
-
-# - name: enable specific mysql repo version
-#   command: yum-config-manager --enable mysql55-community
-
 - name: install mysql client libraries
   yum: name=mysql state=present update_cache=yes
 
@@ -30,9 +21,3 @@
 
 - include: masterslave.yml
   when: "'tag_mysql_master' in group_names"
-# disabled for challenge where master slave is not needed
-#   when: "'tag_mysql_master' in group_names or 'tag_mysql_slave' in group_names"
-# - include: master.yml
-#   when: "'tag_mysql_master' in group_names"
-# - include: slave.yml
-#   when: "'tag_mysql_slave' in group_names"
