@@ -1,0 +1,138 @@
+---
+- name: Create and add rules to outbound traffic security group
+  ec2_group:
+    name: cdh-cluster-outboundtraffic
+    description: Security group for outbound traffic
+    region: "{{ region }}"
+    vpc_id: "{{ main_vpc_id }}"
+    state: present
+    rules_egress:
+      # Needed for package managers such as yum and pip.
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: "{{ ip_range }}"
+  register: outboundtraffic_group
+
+# ========================================================
+# Security groups used for cdh nodes
+# ========================================================
+
+- name: Create and add rules to cdh cluster security group
+  ec2_group:
+    name: cdh-cluster
+    description: Security group for cdh cluster nodes
+    region: "{{ region }}"
+    state: present
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: "{{ ip_range }}"
+      # HDFS external ports
+      - proto: tcp
+        from_port: 50010
+        to_port: 50010
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 9912
+        to_port: 9912
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 7180
+        to_port: 7180
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 7183
+        to_port: 7183
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 8020
+        to_port: 8020
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+      - proto: tcp
+        from_port: 8042
+        to_port: 8042
+        cidr_ip: "{{ ip_range }}"
+      # History server external ports
+      - proto: tcp
+        from_port: 19888
+        to_port: 19888
+        cidr_ip: "{{ ip_range }}"
+      # Hive metastore external ports
+      - proto: tcp
+        from_port: 9083
+        to_port: 9083
+        cidr_ip: "{{ ip_range }}"
+      # Hiveserver2 external ports
+      - proto: tcp
+        from_port: 10000
+        to_port: 10000
+        cidr_ip: "{{ ip_range }}"
+      # Zookeeper external ports
+      - proto: tcp
+        from_port: 2181
+        to_port: 2181
+        cidr_ip: "{{ ip_range }}"
+      # Hue external ports
+      - proto: tcp
+        from_port: 8888
+        to_port: 8888
+        cidr_ip: "{{ ip_range }}"
+      # Spark external ports
+      - proto: tcp
+        from_port: 7077
+        to_port: 7078
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 18080
+        to_port: 18081
+        cidr_ip: "{{ ip_range }}"
+      # Impala external ports
+      - proto: tcp
+        from_port: 21000
+        to_port: 21000
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 21050
+        to_port: 21050
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 25000
+        to_port: 25000
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 25010
+        to_port: 25010
+        cidr_ip: "{{ ip_range }}"
+      - proto: tcp
+        from_port: 25020
+        to_port: 25020
+        cidr_ip: "{{ ip_range }}"
+  register: cdh_cluster_group
+
+- name: Create and add rules to cdh inter-node security group
+  local_action:
+    module: ec2_group
+    name: cdh-cluster-internode
+    description: Security group for cdh cluster inter-node communication
+    region: "{{ region }}"
+    state: present
+    rules:
+      - proto: all
+        group_id: "{{ cdh_cluster_group.group_id }}"
+    rules_egress:
+      - proto: all
+        group_id: "{{ cdh_cluster_group.group_id }}"
+  register: cdh_cluster_internode_group
+
+

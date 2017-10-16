@@ -19,5 +19,5 @@
 - name: install jdbc connector
   yum: name=mysql-connector-java state=present update_cache=yes
 
-- include: masterslave.yml
+- include_tasks: masterslave.yml
   when: "'tag_mysql_master' in group_names"
