@@ -9,12 +9,45 @@ secgroup launch-wizard1
 sebc pem
 
 workon sebc
+ansible-playbook create-cdh-cluster.yml
 ansible-playbook bootstrap.yml
 ansible-playbook java.yml
 ansible-playbook mysql.yml
 ansible-playbook cm.yml
 
 ansible-playbook --private-key ../sebc.pem ping.yml to get the internal ip's to fill in in the search box of CM
+
+Internal IP:
+
+Find: 
+
+```
+ok:\s\[[\d.]+\]\s=>\s{
+\s+"([\d.]+)": "VARIABLE IS NOT DEFINED!"
+}
+```
+
+Replace with 
+
+```
+\1
+```
+
+External IP:
+
+Find: 
+
+```
+ok:\s\[([\d.]+)\]\s=>\s{
+\s+"[\d.]+": "VARIABLE IS NOT DEFINED!"
+}
+```
+
+Replace with 
+
+```
+\1
+```
 
 set user: centos and add key
 
@@ -39,7 +72,7 @@ Restart Cloudera Management services (UI)
 Parcel activate
 
 Install Spark2 (Add service)
-Spark2 History server: Random host other then Spark21 History
+Spark2 History server: Random host other then Spark1 History
 
 ansible-playbook conda.yml
 ansible-playbook start-jupyter.yml
