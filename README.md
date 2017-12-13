@@ -11,7 +11,7 @@ We are currently in the process of making it grow to become more robust and serv
 You need to have the gcloud CLI installed. You need to authenticated and to have chosen the correct
 Google Cloud project (`gcloud config set project <project_id>`). Make sure to use the `project_id` and not the `project_name`.
 
-You need to install the `delegator` package https://github.com/kennethreitz/delegator.py 
+You need to install the `delegator` package https://github.com/kennethreitz/delegator.py
 Note: 2017-06-19 `pip install delegator` did not work for me, installs version 0.0.3 You need to use `pip install delegator.py`
 
 You need to install `pyyaml`. `pip install pyyaml`
@@ -22,16 +22,16 @@ Note: 2017-06-19 in Ubuntu `sudo apt-get install ansible`, On your mac just do `
 
 ## Usage
 
-Once you have create your cluster, you need three things:
+Remember to put the
 
-- The VM name (f.e. `cluster-1-m`);
-- The list of users (put them into `var/common.yml`, under `users`);
-- The notebooks you want to upload stored in `roles/bootstrap/files/notebooks`.
+- The list of users into `var/common.yml`, under `users`;
+- The notebooks in `roles/bootstrap/files/notebooks`.
 
 Then execute
 
 ```
-python deploy.py <vm_name>
+export PROJECT_ID=my-project  # you can skip it if it's configured in your gcloud default values
+python deploy.py <num_workers>  # this will print out the master IP to the console
 ansible-playbook -i hosts --private-key gcloud_ansible playbook.yml
 ```
 

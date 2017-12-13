@@ -1,8 +1,10 @@
 #!/bin/env python
 import os
 import sys
-import delegator
+import random
+import logging
 
+import delegator
 import yaml
 
 KEY_PATH = "gcloud_ansible"
@@ -52,7 +54,7 @@ def get_ip_of(instance_tag):
     elif not external_ip:
         raise GCloudError("No external ip found for instance {}"
                           .format(instance_tag))
-    
+
     print("external ip found for instance {}: {}"
           .format(instance_tag, external_ip))
     return external_ip
@@ -80,7 +82,33 @@ def get_variables():
             HOSTS_PATH)
 
 
-def main(instance_tag):
+def get_random_id(N_sequence=10):
+    _id = ''
+    numbers = list(range(10))
+    for _ in range(N_sequence):
+        _id += str(random.choice(numbers))
+    return _id
+
+
+def create_cluster(project_id, random_id, workers):
+    to_run = f"""gcloud dataproc --region europe-west1 clusters create cluster-{random_id}
+    --subnet default --zone europe-west1-c
+    --master-machine-type n1-standard-4 --master-boot-disk-size 100 --num-workers {workers}
+    --worker-machine-type n1-standard-4 --worker-boot-disk-size 100
+    --initialization-actions 'gs://gdd-trainings-bucket/install_conda.sh'
+    """
+    if project_id:
+        to_run += f" --project_id {project_id}"
+    c = delegator.run(to_run.replace('\n', ' '))
+    if c.err:
+# don't raise, it's printing to standard error but it's not an error
+        logging.warning(c.err)
+
+
+def main(project_id, workers):
+    random_id = get_random_id()
+    create_cluster(project_id, random_id, workers)
+    instance_tag = f"cluster-{random_id}-m"
     key_path, keys_path, yaml_path, hosts_path = get_variables()
     create_key_pair(key_path)
     yml = load_yml(yaml_path)
@@ -93,13 +121,13 @@ def main(instance_tag):
 
 
 if __name__ == "__main__":
-    instance_tag = os.environ.get('INSTANCE_TAG')
+    project_id = os.environ.get('PROJECT_ID')
 
-    # TODO I have to decide on the API here
-    if not instance_tag:
-        instance_tag = sys.argv[1]
+    if not project_id:
+        logging.warning("No project_id provided, assuming there is one set in gcloud")
+        logging.warning("Otherwise set with gcloud config set project <project_id>")
+        logging.warning("Or by setting the 'PROJECT_ID` environment variable")
 
-    main(instance_tag)
+    workers = sys.argv[1]
 
-
-#delegator.run("ansible-playbook -i hosts --private-key %s playbook.yml" % KEY_PATH)
+    main(project_id, workers)
