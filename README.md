@@ -11,6 +11,8 @@ We are currently in the process of making it grow to become more robust and serv
 You need to have the gcloud CLI installed. You need to authenticated and to have chosen the correct
 Google Cloud project (`gcloud config set project <project_id>`). Make sure to use the `project_id` and not the `project_name`.
 
+You need to install the `click` package
+
 You need to install the `delegator` package https://github.com/kennethreitz/delegator.py
 Note: 2017-06-19 `pip install delegator` did not work for me, installs version 0.0.3 You need to use `pip install delegator.py`
 

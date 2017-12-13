@@ -6,6 +6,7 @@ import logging
 
 import delegator
 import yaml
+import click
 
 KEY_PATH = "gcloud_ansible"
 KEYS_PATH = 'keys'
@@ -105,9 +106,12 @@ def create_cluster(project_id, random_id, workers):
         logging.warning(c.err)
 
 
-def main(project_id, workers):
+@click.command()
+@click.option('--project', default=None, help="Google project")
+@click.option('--workers', default=3, help="Number of workers")
+def main(project, workers):
     random_id = get_random_id()
-    create_cluster(project_id, random_id, workers)
+    create_cluster(project, random_id, workers)
     instance_tag = f"cluster-{random_id}-m"
     key_path, keys_path, yaml_path, hosts_path = get_variables()
     create_key_pair(key_path)
@@ -121,13 +125,4 @@ def main(project_id, workers):
 
 
 if __name__ == "__main__":
-    project_id = os.environ.get('PROJECT_ID')
-
-    if not project_id:
-        logging.warning("No project_id provided, assuming there is one set in gcloud")
-        logging.warning("Otherwise set with gcloud config set project <project_id>")
-        logging.warning("Or by setting the 'PROJECT_ID` environment variable")
-
-    workers = sys.argv[1]
-
-    main(project_id, workers)
+    main()
