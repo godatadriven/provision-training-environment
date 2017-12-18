@@ -94,7 +94,7 @@ def get_random_id(N_sequence=10):
 def create_cluster(project_id, random_id, workers):
     to_run = f"""gcloud dataproc --region europe-west1 clusters create cluster-{random_id}
     --subnet default --zone europe-west1-c
-    --master-machine-type n1-standard-4 --master-boot-disk-size 100 --num-workers {workers}
+    --master-machine-type n1-standard-16 --master-boot-disk-size 100 --num-workers {workers}
     --worker-machine-type n1-standard-4 --worker-boot-disk-size 100
     --initialization-actions 'gs://gdd-trainings-bucket/install_conda.sh'
     """
