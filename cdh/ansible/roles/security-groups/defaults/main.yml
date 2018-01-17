@@ -1,0 +1,4 @@
+---
+wibaut_ip_range: 37.17.221.89/32
+# kris_ip_range: 83.85.207.55/32
+ip_range: "{{ wibaut_ip_range }}"
