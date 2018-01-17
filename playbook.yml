@@ -7,4 +7,4 @@
     - vars/common.yml
   roles:
     - bootstrap
-    - nifi
+    # - nifi

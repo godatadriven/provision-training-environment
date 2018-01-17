@@ -33,7 +33,7 @@ Then execute
 
 ```
 export PROJECT_ID=my-project  # you can skip it if it's configured in your gcloud default values
-python deploy.py <num_workers>  # this will print out the master IP to the console
+python deploy.py --workers <num_workers> [optional:--name <cluster-name>] # this will print out the master IP to the console
 ansible-playbook -i hosts --private-key gcloud_ansible playbook.yml
 ```
 

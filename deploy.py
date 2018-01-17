@@ -83,16 +83,22 @@ def get_variables():
             HOSTS_PATH)
 
 
-def get_random_id(N_sequence=10):
+def get_random_id(N_sequence):
     _id = ''
     numbers = list(range(10))
     for _ in range(N_sequence):
         _id += str(random.choice(numbers))
     return _id
 
+def get_cluster_name(name, N_sequence=10):
+    if name:
+        return f"cluster-{name}"
+    else:
+        return f"cluster-{get_random_id(N_sequence)}"
 
-def create_cluster(project_id, random_id, workers):
-    to_run = f"""gcloud dataproc --region europe-west1 clusters create cluster-{random_id}
+
+def create_cluster(project_id, cluster_name, workers):
+    to_run = f"""gcloud dataproc --region europe-west1 clusters create {cluster_name}
     --subnet default --zone europe-west1-c
     --master-machine-type n1-standard-4 --master-boot-disk-size 100 --num-workers {workers}
     --worker-machine-type n1-standard-4 --worker-boot-disk-size 100
@@ -109,10 +115,11 @@ def create_cluster(project_id, random_id, workers):
 @click.command()
 @click.option('--project', default=None, help="Google project")
 @click.option('--workers', default=3, help="Number of workers")
-def main(project, workers):
-    random_id = get_random_id()
-    create_cluster(project, random_id, workers)
-    instance_tag = f"cluster-{random_id}-m"
+@click.option('--name', default=None, help="Google Dataproc Clustername")
+def main(project, workers, name):
+    cluster_name = get_cluster_name(name)
+    create_cluster(project, cluster_name, workers)
+    instance_tag = f"{cluster_name}-m"
     key_path, keys_path, yaml_path, hosts_path = get_variables()
     create_key_pair(key_path)
     yml = load_yml(yaml_path)
@@ -122,7 +129,6 @@ def main(project, workers):
     add_keys_to(instance_tag, keys_path, zone)
     external_ip = get_ip_of(instance_tag)
     write_ip_to(hosts_path, external_ip)
-
 
 if __name__ == "__main__":
     main()
