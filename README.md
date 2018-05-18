@@ -6,21 +6,20 @@ training.
 We are currently in the process of making it grow to become more robust and serve more targets
 (possibly with Anaconda installed).
 
+
 ## Prerequisites
 
-You need to have the gcloud CLI installed. You need to authenticated and to have chosen the correct
-Google Cloud project (`gcloud config set project <project_id>`). Make sure to use the `project_id` and not the `project_name`.
+You need to have the [gcloud CLI](https://cloud.google.com/sdk/downloads) installed.
+You need to be authenticated (`gcloud auth login`) and to have chosen the correct Google Cloud project (`gcloud config set project <project_id>`).
+Note: make sure to use the `project_id` and not the `project_name`.
 
-You need to install the `click` package
+You need a Python 3 interpreter and install the following packages (`pip` suffices):
 
-You need to install the `delegator` package https://github.com/kennethreitz/delegator.py
-Note: 2017-06-19 `pip install delegator` did not work for me, installs version 0.0.3 You need to use `pip install delegator.py`
+- `click`
+- `delegator.py` (note: don't use `pip install delegator`)
+- `pyyaml`
+- `ansible`
 
-You need to install `pyyaml`. `pip install pyyaml`
-Note: 2017-06-19 `pip install yaml` installation works but breaks when running the code.
-
-You need to install ansible
-Note: 2017-06-19 in Ubuntu `sudo apt-get install ansible`, On your mac just do `pip install ansible boto3`
 
 ## Usage
 
@@ -29,9 +28,9 @@ Remember to put the
 - The list of users into `var/common.yml`, under `users`;
 - The notebooks in `roles/bootstrap/files/notebooks`.
 
-Then execute
+Then execute:
 
-```
+```bash
 export PROJECT_ID=my-project  # you can skip it if it's configured in your gcloud default values
 python deploy.py --workers <num_workers> [optional:--name <cluster-name>] # this will print out the master IP to the console
 ansible-playbook -i hosts --private-key gcloud_ansible playbook.yml
@@ -39,24 +38,36 @@ ansible-playbook -i hosts --private-key gcloud_ansible playbook.yml
 
 You should be good to go now!
 
-```
+The master IP is written to `host` and all previous content is discarded.
+To provision older clusters, keep your IPs somewhere separate.
+
+
+## Access
+
+To SSH into the machine and set up port forwarding:
+
+```bash
 ssh -i gcloud_ansible -o IdentitiesOnly=yes -L <port>:localhost:<port> <my_user>@<master_external_ip>
-jupyter notebook --port <port>
 ```
 
 The `master_external_ip` can be found in the `hosts` file.
 
+Now use the same port to start a Jupyter Notebook server on the Gateway:
+
+```bash
+jupyter notebook --port <port>
+```
+
 Distribute the key to your users, and they should also be able to log in.
 
-
-
-NOTE: This is not for a secure environment, where everybody has their own key. However, as all users
-have sudo privileges anyway, that doesn't really matter.
+Note: This is not for a secure environment, where everybody has their own key.
+However, as all users have sudo privileges anyway, that doesn't really matter.
 
 
 ## Testing
 
-If you have docker, be sure to have `localhost` as master in your `hosts`. Then
+If you have docker, be sure to have `localhost` as master in your `hosts`.
+Then run:
 
 ```
 docker build -t gcloud_ansible .
