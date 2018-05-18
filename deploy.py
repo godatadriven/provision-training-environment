@@ -97,15 +97,20 @@ def get_cluster_name(name, N_sequence=10):
         return f"cluster-{get_random_id(N_sequence)}"
 
 
-def create_cluster(project_id, cluster_name, workers):
+def create_cluster(project_id, cluster_name, workers, bucket, single):
     to_run = f"""gcloud dataproc --region europe-west1 clusters create {cluster_name}
     --subnet default --zone europe-west1-c
-    --master-machine-type n1-standard-16 --master-boot-disk-size 100 --num-workers {workers}
-    --worker-machine-type n1-standard-4 --worker-boot-disk-size 100
+    --master-machine-type n1-standard-16 --master-boot-disk-size 100
     --initialization-actions 'gs://gdd-trainings-bucket/install_conda.sh'
     """
     if project_id:
-        to_run += f" --project_id {project_id}"
+        to_run += f" --project {project_id}"
+    if bucket:
+        to_run += f" --bucket {bucket}"
+    if not single:
+        to_run += f"--num-workers {workers} --worker-machine-type n1-standard-4 --worker-boot-disk-size 100"
+    else:
+        to_run += f"--single-node"
     c = delegator.run(to_run.replace('\n', ' '))
     if c.err:
 # don't raise, it's printing to standard error but it's not an error
@@ -116,9 +121,11 @@ def create_cluster(project_id, cluster_name, workers):
 @click.option('--project', default=None, help="Google project")
 @click.option('--workers', default=3, help="Number of workers")
 @click.option('--name', default=None, help="Google Dataproc Clustername")
-def main(project, workers, name):
+@click.option('--bucket', default=None, help="Bucket to mount")
+@click.option('--single-node', default=None, help='Single instance')
+def main(project, workers, name, bucket):
     cluster_name = get_cluster_name(name)
-    create_cluster(project, cluster_name, workers)
+    create_cluster(project, cluster_name, workers, bucket, single)
     instance_tag = f"{cluster_name}-m"
     key_path, keys_path, yaml_path, hosts_path = get_variables()
     create_key_pair(key_path)
