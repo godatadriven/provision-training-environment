@@ -1,0 +1,18 @@
+---
+
+- name: Ansible Playbook for NLP on google-compute-instances
+  hosts: nlp-instances
+  remote_user: "{{ deployer }}"
+  become: yes
+  become_method: sudo
+  vars_files:
+    - vars/common.yml
+  tasks:
+    
+    - ping:
+
+    - name: get ip
+      debug: msg="{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+
+    - name: get host
+      debug: msg="{{ hostvars[inventory_hostname]['ansible_fqdn'] }}"

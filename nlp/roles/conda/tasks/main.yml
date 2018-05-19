@@ -1,0 +1,68 @@
+- name: Get installer
+  get_url: url=https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh dest=/tmp/ mode=755
+
+# - name: Start with clean slate
+#   file: 
+#     path: "{{ item }}"
+#     state: absent
+#   with_items:
+#     - /miniconda
+
+- name: Execute installer
+  shell: /tmp/Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda creates=/miniconda/bin executable=/bin/bash
+
+- name: Copy environment specs
+  template: src=environment.yml dest=/tmp/ mode=755
+
+- name: Create virtual conda environment
+  shell: "/miniconda/bin/conda env create -f /tmp/environment.yml -p /miniconda/envs/{{ conda_environment_name }}"
+  args:
+    creates: "/miniconda/envs/{{ conda_environment_name }}"
+
+- name: Download english spacy defs
+  shell: "/miniconda/envs/{{ conda_environment_name }}/bin/python -m spacy download en"
+
+- name: create notebook, config and data dir
+  file: 
+    path: "{{ item }}"
+    state: directory
+    mode: 0777
+  with_items:
+    - "{{ notebook_folder }}"
+    - "/miniconda/envs/{{ conda_environment_name }}/.jupyter"
+    - "{{ data_folder }}"
+    - "{{ logs_folder }}"
+
+- name: Get dataset
+  unarchive:
+    src: https://storage.googleapis.com/gdd-trainings-bucket/accelerator-lecture07_nlp-data.tar.gz
+    remote_src: yes
+    dest: "{{ data_folder }}"
+    creates: "{{ data_folder }}/data"
+
+- name: Configure jupyter notebook
+  template: 
+    src: jupyter_notebook_config.py 
+    dest: "/miniconda/envs/{{ conda_environment_name }}/.jupyter/"
+    mode: 0755
+
+- name: Copy jupyter start script
+  template: 
+    src: start-jupyter.sh
+    dest: "/miniconda/envs/{{ conda_environment_name }}"
+    mode: 0775
+
+- name: copy notebooks
+  copy:
+    src: files/notebooks/
+    dest: "{{ notebook_folder }}"
+    owner: "{{ deployer }}"
+    mode: 0777
+
+- name: Stop jupyter
+  shell: pkill jupyter
+  ignore_errors: yes
+
+- name: Start jupyter
+  become: no
+  shell: "nohup /miniconda/envs/{{ conda_environment_name }}/start-jupyter.sh >> {{ logs_folder }}/jupyter.log &"
