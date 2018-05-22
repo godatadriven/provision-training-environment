@@ -30,15 +30,14 @@
   with_items:
     - "{{ notebook_folder }}"
     - "/miniconda/envs/{{ conda_environment_name }}/.jupyter"
-    - "{{ data_folder }}"
     - "{{ logs_folder }}"
 
 - name: Get dataset
   unarchive:
     src: https://storage.googleapis.com/gdd-trainings-bucket/accelerator-lecture07_nlp-data.tar.gz
     remote_src: yes
-    dest: "{{ data_folder }}"
-    creates: "{{ data_folder }}/data"
+    dest: "{{ notebook_folder }}"
+    creates: "{{ notebook_folder }}/data"
 
 - name: Configure jupyter notebook
   template: 

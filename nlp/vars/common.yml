@@ -5,7 +5,6 @@ users:
 elastic_version: 6.2.4
 notebook_folder: /training/notebooks
 notebook_port: 5000
-data_folder: /training/dataset
 logs_folder: /training/logs
 notebook_token: class-nlp
 conda_environment_name: godatadriven_nlp
