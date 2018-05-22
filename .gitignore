@@ -89,6 +89,10 @@ ENV/
 .ropeproject
 
 keys
-playbook.retry
-gcloud_ansible*
+*.retry
+*gcloud_*ansible*
 roles/bootstrap/files/notebooks/*
+
+nlp/nlp-keys
+nlp/nlp-hosts
+nlp/roles/conda/files/notebooks/*

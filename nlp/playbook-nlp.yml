@@ -1,0 +1,13 @@
+---
+
+- name: Ansible Playbook for NLP on google-compute-instances
+  hosts: nlp-instances
+  remote_user: "{{ deployer }}"
+  become: yes
+  become_method: sudo
+  vars_files:
+    - vars/common.yml
+  roles:
+    - bootstrap
+    - conda
+    - elastic
