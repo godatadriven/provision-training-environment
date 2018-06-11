@@ -123,9 +123,9 @@ def create_cluster(project_id, cluster_name, workers, bucket, single):
 @click.option('--name', default=None, help="Google Dataproc Clustername")
 @click.option('--bucket', default=None, help="Bucket to mount")
 @click.option('--single-node', default=None, help='Single instance')
-def main(project, workers, name, bucket):
+def main(project, workers, name, bucket, single_node):
     cluster_name = get_cluster_name(name)
-    create_cluster(project, cluster_name, workers, bucket, single)
+    create_cluster(project, cluster_name, workers, bucket, single_node)
     instance_tag = f"{cluster_name}-m"
     key_path, keys_path, yaml_path, hosts_path = get_variables()
     create_key_pair(key_path)

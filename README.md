@@ -10,16 +10,18 @@ We are currently in the process of making it grow to become more robust and serv
 ## Prerequisites
 
 You need to have the [gcloud CLI](https://cloud.google.com/sdk/downloads) installed.
-You need to be authenticated (`gcloud auth login`) and to have chosen the correct Google Cloud project (`gcloud config set project <project_id>`).
-Note: make sure to use the `project_id` and not the `project_name`.
+First authenticate and set the correct Google Cloud project. If you don't know your `project_id`, go to console.cloud.google.com and look for a project with trainings among your projects. Make sure you are logged on with your `@godatadriven.com` e-mail. Note: make sure to use the `project_id` and not the `project_name`.
 
-You need a Python 3 interpreter and install the following packages (`pip` suffices):
+```bash
+gcloud auth login
+gcloud config set project <project_id>
+```
 
-- `click`
-- `delegator.py` (note: don't use `pip install delegator`)
-- `pyyaml`
-- `ansible`
+Install the local environment and activate it
 
+```
+conda env create -f environment.yml
+```
 
 ## Usage
 
@@ -28,10 +30,9 @@ Remember to put the
 - The list of users into `var/common.yml`, under `users`;
 - The notebooks in `roles/bootstrap/files/notebooks`.
 
-Then execute:
+You don't have to do this for a test run though. Then execute:
 
 ```bash
-export PROJECT_ID=my-project  # you can skip it if it's configured in your gcloud default values
 python deploy.py --workers <num_workers> [optional: --name <cluster-name>] # this will print out the master IP to the console
 ansible-playbook -i hosts --private-key gcloud_ansible playbook.yml
 ```
@@ -62,6 +63,10 @@ Distribute the key to your users, and they should also be able to log in.
 
 Note: This is not for a secure environment, where everybody has their own key.
 However, as all users have sudo privileges anyway, that doesn't really matter.
+
+## Teardown
+When you are done, remove your cluster manually here:
+https://console.cloud.google.com/dataproc/clusters
 
 
 ## Testing
