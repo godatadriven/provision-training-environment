@@ -43,6 +43,12 @@
       path: "{{ notebooks_folder }}"
       state: directory
 
+- name: Creates notebooks temporary data folder directory
+  file:
+      path: "{{ notebooks_tmp_folder }}/data"
+      state: directory
+
+
 - name: Check that the main user exists
   stat:
     path: /home/{{ deployer }}
@@ -102,6 +108,28 @@
   become_user: root
   shell: /bin/chown -R {{ item }}:{{ item }} {{ notebooks_folder }}/{{ item }}
   with_items: "{{ users }}"
+
+- name: Get dataset
+  become: true
+  become_user: root
+  unarchive:
+    src: https://storage.googleapis.com/gdd-trainings-bucket/ds-spark-data.zip
+    remote_src: yes
+    dest: "{{ notebooks_tmp_folder }}/data"
+    creates: "{{ notebooks_tmp_folder }}/data/band1.txt"
+  when: include_data
+
+- name: Create data dir in HDFS filesystem
+  become: true
+  become_user: root
+  shell: hdfs dfs -mkdir /data/
+  when: include_data
+
+- name: Put data in HDFS filesystem
+  become: true
+  become_user: root
+  shell: hdfs dfs -put {{ notebooks_tmp_folder }}/data/* /data/
+  when: include_data
 
 - name: copy conda installer
   become: true

@@ -2,5 +2,6 @@ spark_home: /var/lib/spark
 deployer: deploy
 notebooks_folder: /tmp/notebooks
 notebooks_tmp_folder: /tmp/notebooks_tmp
+include_data: True
 users:
   - me

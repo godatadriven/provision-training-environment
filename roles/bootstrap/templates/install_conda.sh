@@ -6,4 +6,4 @@ if [ ! -d "/anaconda" ]; then
 fi
 
 /anaconda/bin/pip install findspark
-/anaconda/bin/conda install -y seaborn
+/anaconda/bin/conda install -y seaborn pandas pyspark
