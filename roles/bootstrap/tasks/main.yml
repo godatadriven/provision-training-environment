@@ -19,17 +19,17 @@
 - name: place requirements
   template: src=requirements.txt dest=/tmp
 
-- name: remove notebooks folder
-  become: true
-  become_user: root
-  file:
-    state: absent
-    path: "{{ notebooks_tmp_folder }}"
+# - name: remove notebooks tmp folder
+#   become: true
+#   become_user: root
+#   file:
+#     state: absent
+#     path: "{{ notebooks_tmp_folder }}"
 
-- name: Creates notebooks folder directory
-  file:
-      path: "{{ notebooks_tmp_folder }}"
-      state: directory
+# - name: Creates notebooks folder directory
+#   file:
+#       path: "{{ notebooks_tmp_folder }}"
+#       state: directory
 
 - name: remove notebooks folder
   become: true
@@ -40,8 +40,11 @@
 
 - name: Creates notebooks folder directory
   file:
-      path: "{{ notebooks_folder }}"
+      path: "{{ item }}"
       state: directory
+  with_items:
+    - "{{ notebooks_folder }}"
+    - "{{ notebooks_folder }}/data"
 
 - name: Check that the main user exists
   stat:
@@ -76,42 +79,92 @@
 - name: mkdir jupyter for every user
   become: true
   become_user: root
-  file: path=/home/{{ item }}/.jupyter state=directory owner={{ item }} group={{ item }} mode=0755
+  file: path=/home/{{ item.name }}/.jupyter state=directory owner={{ item.name }} group={{ item.name }} mode=0755
   with_items: "{{ users }}"
 
 - name: place jupyter file for every user
   become: true
   become_user: root
-  template: src=jupyter_notebook_config.py dest=/home/{{ item }}/.jupyter owner={{ item }}
+  template: src=jupyter_notebook_config.py dest=/home/{{ item.name }}/.jupyter owner={{ item.name }}
   with_items: "{{ users }}"
 
 - name: mkdirs for every user
   become: true
   become_user: root
-  file: path={{notebooks_folder}}/{{ item }} state=directory owner={{ item }} group={{ item }} mode=0700
+  file: path={{notebooks_folder}}/{{ item.name }} state=directory owner={{ item.name }} group={{ item.name }} mode=0777
   with_items: "{{ users }}"
 
 - name: copy notebooks for every user
   become: true
   become_user: root
-  shell: /bin/cp -R {{ notebooks_tmp_folder }}/* {{ notebooks_folder }}/{{ item }}
+  shell: /bin/cp -R {{ notebooks_tmp_folder }}/* {{ notebooks_folder }}/{{ item.name }}
   with_items: "{{ users }}"
 
 - name: set ownership for notebooks
   become: true
   become_user: root
-  shell: /bin/chown -R {{ item }}:{{ item }} {{ notebooks_folder }}/{{ item }}
+  shell: /bin/chown -R {{ item.name }}:{{ item.name }} {{ notebooks_folder }}/{{ item.name }}
   with_items: "{{ users }}"
 
-- name: copy conda installer
-  become: true
-  become_user: root
-  template: src=install_conda.sh dest=/tmp/install_conda.sh
+- name: Copy environment specs
+  template: src=environment.yml dest=/tmp/{{ item.name }}-environment.yml mode=755
+  with_items: "{{ users }}"
 
-- name: install conda
+- name: create conda env dir dir
   become: true
   become_user: root
-  shell: sh /tmp/install_conda.sh
+  file: 
+    path: "/anaconda/envs/{{ item.env }}"
+    state: directory
+    mode: 0777
+  with_items: "{{ users }}"
+
+- name: set accessability for conda envs
+  become: true
+  become_user: root
+  shell: /bin/chmod -R 777 /anaconda
+
+- name: Update conda
+  become: true
+  become_user: root
+  shell: "/anaconda/bin/conda update conda --quiet -y"
+
+- name: Create virtual conda environment
+  become: true
+  become_user: root
+  shell: "/anaconda/bin/conda env create -f /tmp/{{ item.name }}-environment.yml -p /anaconda/envs/{{ item.env }}"
+  args:
+    creates: "/anaconda/envs/{{ item.env }}/bin"
+  with_items: "{{ users }}"
+
+- name: set ownership for conda envs
+  become: true
+  become_user: root
+  shell: /bin/chown -R {{ item.name }}:{{ item.name }} /anaconda/envs/{{ item.env }}
+  with_items: "{{ users }}"
+
+- name: Get dataset
+  unarchive:
+    src: https://storage.googleapis.com/gdd-trainings-bucket/ds-spark-data.zip
+    remote_src: yes
+    dest: "{{ notebooks_folder }}/data"
+    creates: "{{ notebooks_folder }}/data/heroes.csv"
+
+- name: Copy jupyter start script
+  template: 
+    src: start-jupyter.sh
+    dest: "/anaconda/envs/{{ item.env }}"
+    mode: 0775
+  with_items: "{{ users }}"
+
+- name: Stop jupyter
+  shell: pkill jupyter
+  ignore_errors: yes
+
+- name: Start jupyter
+  become: no
+  shell: "nohup sudo -u {{item.name }} /anaconda/envs/{{ item.env }}/start-jupyter.sh >> /tmp/{{ item.name }}-jupyter.log &"
+  with_items: "{{ users }}"
 
 - name: Check that Spark conf is present
   stat:
@@ -124,7 +177,7 @@
   template: src=spark-defaults.conf dest=/tmp/spark-defaults.conf
   when: spark_conf.stat.exists == True
 
-- name: set ownership for notebooks
+- name: get sprak default contents
   become: true
   become_user: root
   shell: cat /tmp/spark-defaults.conf

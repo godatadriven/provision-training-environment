@@ -2,5 +2,8 @@ spark_home: /var/lib/spark
 deployer: deploy
 notebooks_folder: /tmp/notebooks
 notebooks_tmp_folder: /tmp/notebooks_tmp
+notebook_token: class-ds-with-spark
 users:
-  - me
+  - { name: kris, port: 9901, env: gdd_env_kris }
+  - { name: robert, port: 9902, env: gdd_env_robert }
+

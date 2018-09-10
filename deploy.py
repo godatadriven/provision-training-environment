@@ -7,6 +7,8 @@ import logging
 import delegator
 import yaml
 import click
+import requests
+
 
 KEY_PATH = "gcloud_ansible"
 KEYS_PATH = 'keys'
@@ -36,8 +38,8 @@ def load_key(path):
 
 def write_users(yml, key, key_path):
     with open(key_path, 'w') as f:
-        for user in yml.get('users', []) + [yml.get('deployer')]:
-            f.write(''.join([user, ':', key]))
+        for user in yml.get('users', []) + [{ 'name': yml.get('deployer')}]:
+            f.write(''.join([user['name'], ':', key]))
 
 
 def add_keys_to(instance_tag, key_path, zone):
@@ -96,11 +98,29 @@ def get_cluster_name(name, N_sequence=10):
     else:
         return f"cluster-{get_random_id(N_sequence)}"
 
+def add_firewall_rules():
+    r = requests.get("http://www.icanhazip.com/")
+    ip = r.text.replace('\n', '')
+
+    d = delegator.run(("gcloud compute firewall-rules delete allow-ds-spark-training-ports --quiet "))
+    if d.err:
+        # don't raise, it's printing to standard error but it's not an error
+        logging.warning(d.err)
+
+    c = delegator.run(("gcloud compute firewall-rules create allow-ds-spark-training-ports "
+                   "--allow tcp:9900-9999 "
+                   "--source-ranges '{ip}/32' "
+                   "--target-tags 'ds-spark-training-instance' "
+                   "--description 'Allow access to jupyter user notebooks'").format(ip=ip))
+    if c.err:
+        # don't raise, it's printing to standard error but it's not an error
+        logging.warning(c.err)
 
 def create_cluster(project_id, cluster_name, workers, bucket, single):
     to_run = f"""gcloud dataproc --region europe-west1 clusters create {cluster_name}
     --subnet default --zone europe-west1-c
     --master-machine-type n1-standard-16 --master-boot-disk-size 100
+    --tags ds-spark-training-instance
     --initialization-actions 'gs://gdd-trainings-bucket/install_conda.sh'
     """
     if project_id:
@@ -136,6 +156,7 @@ def main(project, workers, name, bucket, single_node):
     add_keys_to(instance_tag, keys_path, zone)
     external_ip = get_ip_of(instance_tag)
     write_ip_to(hosts_path, external_ip)
+    add_firewall_rules()
 
 if __name__ == "__main__":
     main()

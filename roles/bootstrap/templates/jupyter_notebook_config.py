@@ -192,7 +192,7 @@ c.NotebookApp.ip = '0.0.0.0'
 #c.NotebookApp.nbserver_extensions = {}
 
 ## The directory to use for notebooks and kernels.
-c.NotebookApp.notebook_dir = u'/tmp/notebooks/{{item}}'
+c.NotebookApp.notebook_dir = u'/tmp/notebooks/{{ item.name }}'
 
 ## Whether to open in a browser after starting. The specific browser used is
 #  platform dependent and determined by the python standard library `webbrowser`
@@ -210,7 +210,7 @@ c.NotebookApp.notebook_dir = u'/tmp/notebooks/{{item}}'
 #c.NotebookApp.password = u''
 
 ## The port the notebook server will listen on.
-#c.NotebookApp.port = 8888
+c.NotebookApp.port = {{ item.port }}
 
 ## The number of additional ports to try if the specified port is not available.
 #c.NotebookApp.port_retries = 50
@@ -240,7 +240,7 @@ c.NotebookApp.notebook_dir = u'/tmp/notebooks/{{item}}'
 #  
 #  Setting to an empty string disables authentication altogether, which is NOT
 #  RECOMMENDED.
-#c.NotebookApp.token = '<generated>'
+c.NotebookApp.token = '{{ notebook_token }}'
 
 ## Supply overrides for the tornado.web.Application that the Jupyter notebook
 #  uses.
