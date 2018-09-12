@@ -1,21 +1,22 @@
 #!/bin/env python
-import os
-import sys
-import random
 import logging
+import os
+import random
 
+import click
 import delegator
 import yaml
-import click
 
 KEY_PATH = "gcloud_elastic_ansible"
 KEYS_PATH = 'elastic-keys'
 YAML_PATH = "vars/common.yml"
 HOSTS_PATH = 'elastic-hosts'
 
+
 class GCloudError(Exception):
     def __init__(self, message):
         super().__init__(message)
+
 
 def create_key_pair(key_path):
     if not os.path.isfile(key_path):
@@ -45,6 +46,7 @@ def add_keys_to(instance_tag, key_path, zone):
     delegator.run(("gcloud compute instances add-metadata %s "
                    "--zone=%s --metadata-from-file sshKeys=%s") % (instance_tag, zone, key_path))
 
+
 def get_ip_of(instance_tag):
     # TODO This method could be optional
     c = delegator.run(('gcloud --format="value(networkInterfaces[0].accessConfigs[0].natIP)" '
@@ -67,6 +69,7 @@ def zone_of(instance_tag):
     zone = c.out.strip()
     return zone
 
+
 def add_firewall_rules():
     delegator.run("gcloud compute firewall-rules delete allow-elastic-training-ports ")
     delegator.run(r"""gcloud compute firewall-rules create allow-elastic-training-ports \
@@ -75,10 +78,12 @@ def add_firewall_rules():
                    --target-tags elastic-training-instance \
                    --description 'Allow access to Elasticsearch, Kibana, Logstash, Netcat and Jupyter'""")
 
+
 def init_host_file(hosts_path):
     with open(hosts_path, 'w') as f:
         f.write('[elastic-instances]')
         f.write('\n')
+
 
 def write_ip_to(hosts_path, external_ip):
     with open(hosts_path, 'a') as f:
@@ -100,6 +105,7 @@ def get_random_id(N_sequence):
         _id += str(random.choice(numbers))
     return _id
 
+
 def get_instance_name_prefix(name, N_sequence=10):
     if name:
         return f"elastic-{name}"
@@ -108,33 +114,20 @@ def get_instance_name_prefix(name, N_sequence=10):
 
 
 def create_machines(project_id, name_prefix, instances):
-    # to_run = f"""gcloud dataproc --region europe-west1 clusters create {cluster_name}
-    # --subnet default --zone europe-west1-c
-    # --master-machine-type n1-standard-16 --master-boot-disk-size 100 --num-workers {workers}
-    # --worker-machine-type n1-standard-4 --worker-boot-disk-size 100
-    # --initialization-actions 'gs://gdd-trainings-bucket/install_conda.sh'
-    # """
     for instance in range(0,instances):
-    	machine_name = f"{name_prefix}-{instance}"
-    	to_run = f"""gcloud beta compute instances create {machine_name} 
-    	--subnet=default --zone=europe-west1-c
-    	--machine-type=n1-standard-4
-    	--tags elastic-training-instance
-    	--boot-disk-size=20GB --boot-disk-type=pd-standard --boot-disk-device-name={machine_name}
-		"""
-    	# --network-tier=PREMIUM
-    	# --maintenance-policy=MIGRATE
-    	# --service-account=787238606102-compute@developer.gserviceaccount.com
-    	# --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append
-    	# --tags=http-server,https-server
-    	# --image=debian-9-stretch-v20180510
-    	# --image-project=debian-cloud 
-    	if project_id:
-        	to_run += f" --project_id {project_id}"
-    	c = delegator.run(to_run.replace('\n', ' '))
-    	if c.err:
-			# don't raise, it's printing to standard error but it's not an error
-        	logging.warning(c.err)
+        machine_name = f"{name_prefix}-{instance}"
+        to_run = f"""gcloud beta compute instances create {machine_name} 
+        --subnet=default --zone=europe-west1-c
+        --machine-type=n1-standard-4
+        --tags elastic-training-instance
+        --boot-disk-size=20GB --boot-disk-type=pd-standard --boot-disk-device-name={machine_name}
+        """
+        if project_id:
+            to_run += f" --project_id {project_id}"
+        c = delegator.run(to_run.replace('\n', ' '))
+        if c.err:
+            # don't raise, it's printing to standard error but it's not an error
+            logging.warning(c.err)
 
 
 @click.command()
@@ -152,11 +145,12 @@ def main(project, instances, name):
     write_users(yml, key, keys_path)
     init_host_file(hosts_path)
     for instance in range(0, instances):
-    	instance_tag = f"{name_prefix}-{instance}"
-    	zone = zone_of(instance_tag)
-    	add_keys_to(instance_tag, keys_path, zone)
-    	external_ip = get_ip_of(instance_tag)
-    	write_ip_to(hosts_path, external_ip)
+        instance_tag = f"{name_prefix}-{instance}"
+        zone = zone_of(instance_tag)
+        add_keys_to(instance_tag, keys_path, zone)
+        external_ip = get_ip_of(instance_tag)
+        write_ip_to(hosts_path, external_ip)
+
 
 if __name__ == "__main__":
     main()
