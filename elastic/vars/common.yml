@@ -1,0 +1,10 @@
+deployer: deploy
+users:
+  - student00
+  - student01
+elastic_version: 6.4.0
+notebook_folder: /training/notebooks
+notebook_port: 5000
+logs_folder: /training/logs
+notebook_token: class-elastic
+conda_environment_name: godatadriven_elastic

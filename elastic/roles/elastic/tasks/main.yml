@@ -1,0 +1,83 @@
+- name: Install java
+  apt: 
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - openjdk-8-jdk
+
+- name: Make Java8 the default
+  alternatives:
+    name: java
+    path: /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+
+- name: Install needed deb packages
+  apt: 
+    deb: "{{ item }}"
+    state: present
+  with_items:
+    - "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elastic_version }}.deb"
+    - "https://artifacts.elastic.co/downloads/kibana/kibana-{{ elastic_version }}-amd64.deb"
+    - "https://artifacts.elastic.co/downloads/logstash/logstash-{{ elastic_version }}.deb"
+    - "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-{{ elastic_version }}-amd64.deb"
+
+- name: Set elasticsearch host to internal IP
+  lineinfile:
+    dest: /etc/elasticsearch/elasticsearch.yml
+    state: present
+    regexp: "^network\\.host"
+    line: "network.host: 0.0.0.0"
+
+- name: Set kibana server host to internal IP
+  lineinfile:
+    dest: /etc/kibana/kibana.yml
+    state: present
+    regexp: "^server\\.host"
+    line: "server.host: {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+
+- name: restart and enable service, also issue daemon-reload to pick up config changes
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+    name: "{{ item }}"
+  with_items:
+    - elasticsearch.service
+    - kibana.service
+    - logstash.service
+    - filebeat.service
+
+- name: change ownership of original services directories
+  file:
+    path: "/etc/{{ item }}"
+    mode: 0777
+    recurse: yes
+  with_items:
+    - "elasticsearch"
+    - "kibana"
+    - "logstash"
+    - "filebeat"
+
+- name: create services directory
+  file:
+    path: "{{ notebook_folder }}/services"
+    state: directory
+    mode: 0777
+
+- name: make symlinks to service directories
+  file:
+    src: "/etc/{{ item }}"
+    dest: "{{ notebook_folder }}/services/{{ item }}"
+    mode: 0777
+    state: link
+    force: yes
+  with_items:
+    - "elasticsearch"
+    - "kibana"
+    - "logstash"
+    - "filebeat"
+
+- name: change ownership of logs directory so student can write to it
+  file:
+    path: "/var/log"
+    mode: 0777
+    recurse: yes
