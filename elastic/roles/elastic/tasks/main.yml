@@ -18,6 +18,7 @@
     - "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elastic_version }}.deb"
     - "https://artifacts.elastic.co/downloads/kibana/kibana-{{ elastic_version }}-amd64.deb"
     - "https://artifacts.elastic.co/downloads/logstash/logstash-{{ elastic_version }}.deb"
+    - "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-{{ elastic_version }}-amd64.deb"
 
 - name: Set elasticsearch host to internal IP
   lineinfile:
@@ -43,6 +44,7 @@
     - elasticsearch.service
     - kibana.service
     - logstash.service
+    - filebeat.service
 
 - name: change ownership of original services directories
   file:
@@ -53,6 +55,7 @@
     - "elasticsearch"
     - "kibana"
     - "logstash"
+    - "filebeat"
 
 - name: create services directory
   file:
@@ -71,4 +74,10 @@
     - "elasticsearch"
     - "kibana"
     - "logstash"
+    - "filebeat"
 
+- name: change ownership of logs directory so student can write to it
+  file:
+    path: "/var/log"
+    mode: 0777
+    recurse: yes

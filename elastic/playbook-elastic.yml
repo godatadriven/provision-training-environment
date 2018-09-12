@@ -9,6 +9,6 @@
     - vars/common.yml
   roles:
     - bootstrap
-#    - conda
+    - conda
     - elastic
 

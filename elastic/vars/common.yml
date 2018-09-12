@@ -1,8 +1,8 @@
 deployer: deploy
 users:
-  - kris
-  - robert
-elastic_version: 6.3.1
+  - student00
+  - student01
+elastic_version: 6.4.0
 notebook_folder: /training/notebooks
 notebook_port: 5000
 logs_folder: /training/logs

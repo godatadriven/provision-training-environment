@@ -32,12 +32,19 @@
     - "/miniconda/envs/{{ conda_environment_name }}/.jupyter"
     - "{{ logs_folder }}"
 
+- name: copy notebooks
+  copy:
+    src: files/notebooks/
+    dest: "{{ notebook_folder }}"
+    owner: "{{ deployer }}"
+    mode: 0777
+
 - name: Get dataset
   unarchive:
-    src: https://storage.googleapis.com/gdd-trainings-bucket/accelerator-lecture07_nlp-data.tar.gz
+    src: https://storage.googleapis.com/gdd-trainings-bucket/elastic-stack-two-day-data.tar.gz
     remote_src: yes
-    dest: "{{ notebook_folder }}"
-    creates: "{{ notebook_folder }}/data"
+    dest: "{{ notebook_folder }}/exercises"
+    creates: "{{ notebook_folder }}/exercises/data"
 
 - name: Configure jupyter notebook
   template: 
@@ -50,13 +57,6 @@
     src: start-jupyter.sh
     dest: "/miniconda/envs/{{ conda_environment_name }}"
     mode: 0775
-
-- name: copy notebooks
-  copy:
-    src: files/notebooks/
-    dest: "{{ notebook_folder }}"
-    owner: "{{ deployer }}"
-    mode: 0777
 
 - name: Stop jupyter
   shell: pkill jupyter
