@@ -1,4 +1,4 @@
-spark_home: /var/lib/spark
+spark_home: /usr/lib/spark
 deployer: deploy
 notebooks_folder: /tmp/notebooks
 notebooks_tmp_folder: /tmp/notebooks_tmp

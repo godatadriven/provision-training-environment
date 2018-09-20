@@ -1,7 +1,7 @@
 deployer: deploy
 users:
-  - kris
-  - robert
+  - { name: kris, port: 9901 }
+  - { name: robert, port: 9902 }
 elastic_version: 6.2.4
 notebook_folder: /training/notebooks
 notebook_port: 5000

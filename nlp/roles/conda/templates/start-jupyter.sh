@@ -1,7 +1,7 @@
 #!/bin/bash
 
-source /miniconda/bin/activate {{ conda_environment_name }}
+source /miniconda/bin/activate {{ item.env }}
 
-export PATH=/miniconda/envs/{{ conda_environment_name }}/bin:$PATH
+export PATH=/miniconda/envs/{{ item.env }}/bin:$PATH
 
-exec /miniconda/envs/{{ conda_environment_name }}/bin/jupyter notebook --config /miniconda/envs/{{ conda_environment_name }}/.jupyter/jupyter_notebook_config.py &> /dev/null &
+exec /miniconda/envs/{{ item.env }}/bin/jupyter notebook --config /miniconda/envs/{{ item.env }}/.jupyter/jupyter_notebook_config.py &> /dev/null &

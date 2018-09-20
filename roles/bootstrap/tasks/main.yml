@@ -70,11 +70,9 @@
   when: user_home.stat.exists == False
 
 - name: place notebooks
-  copy:
+  synchronize:
     src: files/notebooks/
     dest: "{{ notebooks_tmp_folder }}"
-    owner: "{{ deployer }}"
-    mode: 0777
 
 - name: mkdir jupyter for every user
   become: true
@@ -132,7 +130,7 @@
 - name: Create virtual conda environment
   become: true
   become_user: root
-  shell: "/anaconda/bin/conda env create -f /tmp/{{ item.name }}-environment.yml -p /anaconda/envs/{{ item.env }}"
+  shell: "SPARK_HOME={{ spark_home }} /anaconda/bin/conda env create -f /tmp/{{ item.name }}-environment.yml -p /anaconda/envs/{{ item.env }}"
   args:
     creates: "/anaconda/envs/{{ item.env }}/bin"
   with_items: "{{ users }}"
