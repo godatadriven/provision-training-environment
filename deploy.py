@@ -7,7 +7,7 @@ import logging
 import delegator
 import yaml
 import click
-import requests
+import urllib.request
 
 
 KEY_PATH = "gcloud_ansible"
@@ -98,20 +98,22 @@ def get_cluster_name(name, N_sequence=10):
     else:
         return f"cluster-{get_random_id(N_sequence)}"
 
-def add_firewall_rules():
-    r = requests.get("http://www.icanhazip.com/")
-    ip = r.text.replace('\n', '')
+def add_firewall_rules(cluster_name):
+    #external_ip = '37.17.221.89'
+    external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
 
-    d = delegator.run(("gcloud compute firewall-rules delete allow-ds-spark-training-ports --quiet "))
+    d = delegator.run(
+        ("gcloud compute firewall-rules delete allow-{cluster}-ports --quiet ").format(cluster=cluster_name)
+    )
     if d.err:
         # don't raise, it's printing to standard error but it's not an error
         logging.warning(d.err)
 
-    c = delegator.run(("gcloud compute firewall-rules create allow-ds-spark-training-ports "
-                   "--allow tcp:9900-9999 "
+    c = delegator.run(("gcloud compute firewall-rules create allow-{cluster}-ports "
+                   "--allow tcp:9900-9999,tcp:4040-4240,tcp:8088,tcp:9870 "
                    "--source-ranges '{ip}/32' "
-                   "--target-tags 'ds-spark-training-instance' "
-                   "--description 'Allow access to jupyter user notebooks'").format(ip=ip))
+                   "--target-tags '{cluster}-instance' "
+                   "--description 'Allow access to jupyter user notebooks'").format(ip=external_ip, cluster=cluster_name))
     if c.err:
         # don't raise, it's printing to standard error but it's not an error
         logging.warning(c.err)
@@ -120,7 +122,7 @@ def create_cluster(project_id, cluster_name, workers, bucket, single):
     to_run = f"""gcloud dataproc --region europe-west1 clusters create {cluster_name}
     --subnet default --zone europe-west1-c
     --master-machine-type n1-standard-16 --master-boot-disk-size 100
-    --tags ds-spark-training-instance
+    --tags {cluster_name}-instance
     --initialization-actions 'gs://gdd-trainings-bucket/install_conda.sh'
     """
     if project_id:
@@ -156,7 +158,7 @@ def main(project, workers, name, bucket, single_node):
     add_keys_to(instance_tag, keys_path, zone)
     external_ip = get_ip_of(instance_tag)
     write_ip_to(hosts_path, external_ip)
-    add_firewall_rules()
+    add_firewall_rules(cluster_name)
 
 if __name__ == "__main__":
     main()

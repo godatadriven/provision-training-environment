@@ -45,6 +45,8 @@
   with_items:
     - "{{ notebooks_folder }}"
     - "{{ notebooks_folder }}/data"
+    - "{{ notebooks_tmp_folder }}/notebooks"
+    - "{{ notebooks_tmp_folder }}/answers"
 
 - name: Check that the main user exists
   stat:
@@ -72,7 +74,12 @@
 - name: place notebooks
   synchronize:
     src: files/notebooks/
-    dest: "{{ notebooks_tmp_folder }}"
+    dest: "{{ notebooks_tmp_folder }}/notebooks"
+
+- name: place answers
+  synchronize:
+    src: files/answers/
+    dest: "{{ notebooks_tmp_folder }}/answers/"
 
 - name: mkdir jupyter for every user
   become: true
@@ -92,10 +99,10 @@
   file: path={{notebooks_folder}}/{{ item.name }} state=directory owner={{ item.name }} group={{ item.name }} mode=0777
   with_items: "{{ users }}"
 
-- name: copy notebooks for every user
+- name: copy notebooks and answers for every user
   become: true
   become_user: root
-  shell: /bin/cp -R {{ notebooks_tmp_folder }}/* {{ notebooks_folder }}/{{ item.name }}
+  shell: /bin/cp -R {{ notebooks_tmp_folder }}/* {{ notebooks_folder }}/{{ item.name }}/
   with_items: "{{ users }}"
 
 - name: set ownership for notebooks
@@ -148,6 +155,11 @@
     dest: "{{ notebooks_folder }}/data"
     creates: "{{ notebooks_folder }}/data/heroes.csv"
 
+- name: Copy dataset to HDFS too
+  become: true
+  become_user: root
+  shell: hdfs dfs -put "{{ notebooks_folder }}/data" /tmp/
+
 - name: Copy jupyter start script
   template: 
     src: start-jupyter.sh
@@ -175,7 +187,7 @@
   template: src=spark-defaults.conf dest=/tmp/spark-defaults.conf
   when: spark_conf.stat.exists == True
 
-- name: get sprak default contents
+- name: get spark default contents
   become: true
   become_user: root
   shell: cat /tmp/spark-defaults.conf
@@ -208,6 +220,15 @@
      dest: "/usr/lib/spark/conf/spark-defaults.conf"
      regexp: 'dynamicAllocation\.maxExecutors'
      line: 'spark.dynamicAllocation.maxExecutors 2'
+  when: spark_conf.stat.exists == True
+
+- name: replace number of dynamic executors
+  become: true
+  become_user: root
+  lineinfile:
+     dest: "/usr/lib/spark/conf/spark-defaults.conf"
+     regexp: 'port\.maxRetries'
+     line: 'spark.port.maxRetries 200'
   when: spark_conf.stat.exists == True
 
 - name: set SPARK_HOME
