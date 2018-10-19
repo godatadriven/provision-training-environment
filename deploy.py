@@ -1,6 +1,5 @@
 #!/bin/env python
 import os
-import sys
 import random
 import logging
 
@@ -15,9 +14,11 @@ KEYS_PATH = 'keys'
 YAML_PATH = "vars/common.yml"
 HOSTS_PATH = 'hosts'
 
+
 class GCloudError(Exception):
     def __init__(self, message):
         super().__init__(message)
+
 
 def create_key_pair(key_path):
     if not os.path.isfile(key_path):
@@ -46,6 +47,7 @@ def add_keys_to(instance_tag, key_path, zone):
     # TODO This method could be optional
     delegator.run(("gcloud compute instances add-metadata %s "
                    "--zone=%s --metadata-from-file sshKeys=%s") % (instance_tag, zone, key_path))
+
 
 def get_ip_of(instance_tag):
     # TODO This method could be optional
@@ -92,11 +94,13 @@ def get_random_id(N_sequence):
         _id += str(random.choice(numbers))
     return _id
 
+
 def get_cluster_name(name, N_sequence=10):
     if name:
         return f"cluster-{name}"
     else:
         return f"cluster-{get_random_id(N_sequence)}"
+
 
 def add_firewall_rules(cluster_name):
     #external_ip = '37.17.221.89'
@@ -118,8 +122,10 @@ def add_firewall_rules(cluster_name):
         # don't raise, it's printing to standard error but it's not an error
         logging.warning(c.err)
 
+
 def create_cluster(project_id, cluster_name, workers, bucket, single):
-    to_run = f"""gcloud dataproc --region europe-west1 clusters create {cluster_name}
+    to_run = f"""gcloud dataproc clusters create {cluster_name}
+    --region europe-west1
     --subnet default --zone europe-west1-c
     --master-machine-type n1-standard-16 --master-boot-disk-size 100
     --tags {cluster_name}-instance
@@ -130,9 +136,9 @@ def create_cluster(project_id, cluster_name, workers, bucket, single):
     if bucket:
         to_run += f" --bucket {bucket}"
     if not single:
-        to_run += f"--num-workers {workers} --worker-machine-type n1-standard-4 --worker-boot-disk-size 100"
+        to_run += f" --num-workers {workers} --worker-machine-type n1-standard-4 --worker-boot-disk-size 100"
     else:
-        to_run += f"--single-node"
+        to_run += f" --single-node"
     c = delegator.run(to_run.replace('\n', ' '))
     if c.err:
 # don't raise, it's printing to standard error but it's not an error
@@ -159,6 +165,7 @@ def main(project, workers, name, bucket, single_node):
     external_ip = get_ip_of(instance_tag)
     write_ip_to(hosts_path, external_ip)
     add_firewall_rules(cluster_name)
+
 
 if __name__ == "__main__":
     main()
