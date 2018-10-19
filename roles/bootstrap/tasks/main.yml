@@ -1,23 +1,25 @@
+- name: Check for Anaconda
+  stat: path=/anaconda/bin/conda
+  register: anaconda_present
+
+- name: fail if anaconda is not present
+  fail: msg="The master node should have Anaconda. Make sure the initialization-action has run! (install_conda.sh)"
+  when: anaconda_present.stat.exists == False
+
 - name: install packages
-  become: true
-  become_user: root
-  apt: name={{item}} state=installed #update_cache=yes
+  apt: name={{item}} state=present
   with_items:
-    # - python3-dev
-    # - python3-pip
     - build-essential
     - libfreetype6-dev
     - blt-dev
     - pkg-config
-    # - llvm-3.8-dev
     - libssl1.0.0
     - sudo
 
-- name: Add aliases to file
-  lineinfile: dest="~/.bashrc" line="alias ll='ls -Alh'"
-
 - name: place requirements
-  template: src=requirements.txt dest=/tmp
+  template:
+    src: requirements.txt
+    dest: "/tmp/requirements.txt"
 
 # - name: remove notebooks tmp folder
 #   become: true
@@ -32,8 +34,6 @@
 #       state: directory
 
 - name: remove notebooks folder
-  become: true
-  become_user: root
   file:
     state: absent
     path: "{{ notebooks_folder }}"
@@ -82,70 +82,62 @@
     dest: "{{ notebooks_tmp_folder }}/answers/"
 
 - name: mkdir jupyter for every user
-  become: true
-  become_user: root
   file: path=/home/{{ item.name }}/.jupyter state=directory owner={{ item.name }} group={{ item.name }} mode=0755
   with_items: "{{ users }}"
 
 - name: place jupyter file for every user
-  become: true
-  become_user: root
   template: src=jupyter_notebook_config.py dest=/home/{{ item.name }}/.jupyter owner={{ item.name }}
   with_items: "{{ users }}"
 
 - name: mkdirs for every user
-  become: true
-  become_user: root
   file: path={{notebooks_folder}}/{{ item.name }} state=directory owner={{ item.name }} group={{ item.name }} mode=0777
   with_items: "{{ users }}"
 
 - name: copy notebooks and answers for every user
-  become: true
-  become_user: root
   shell: /bin/cp -R {{ notebooks_tmp_folder }}/* {{ notebooks_folder }}/{{ item.name }}/
   with_items: "{{ users }}"
 
 - name: set ownership for notebooks
-  become: true
-  become_user: root
-  shell: /bin/chown -R {{ item.name }}:{{ item.name }} {{ notebooks_folder }}/{{ item.name }}
+  file:
+    path: "{{ notebooks_folder }}/{{ item.name }}"
+    group: "{{ item.name }}"
+    owner: "{{ item.name }}"
+    recurse: yes
   with_items: "{{ users }}"
 
 - name: Copy environment specs
   template: src=environment.yml dest=/tmp/{{ item.name }}-environment.yml mode=755
   with_items: "{{ users }}"
 
-- name: create conda env dir dir
-  become: true
-  become_user: root
-  file: 
+- name: create conda env-dir for each user
+  file:
     path: "/anaconda/envs/{{ item.env }}"
     state: directory
     mode: 0777
   with_items: "{{ users }}"
 
-- name: set accessability for conda envs
-  become: true
-  become_user: root
-  shell: /bin/chmod -R 777 /anaconda
-
 - name: Update conda
-  become: true
-  become_user: root
   shell: "/anaconda/bin/conda update conda --quiet -y"
 
+- name: set full accessibility to conda
+  file:
+    path: "/anaconda"
+    mode: 0777
+    recurse: yes
+
 - name: Create virtual conda environment
-  become: true
-  become_user: root
   shell: "SPARK_HOME={{ spark_home }} /anaconda/bin/conda env create -f /tmp/{{ item.name }}-environment.yml -p /anaconda/envs/{{ item.env }}"
   args:
     creates: "/anaconda/envs/{{ item.env }}/bin"
   with_items: "{{ users }}"
 
 - name: set ownership for conda envs
-  become: true
-  become_user: root
-  shell: /bin/chown -R {{ item.name }}:{{ item.name }} /anaconda/envs/{{ item.env }}
+  file:
+    path: "/anaconda/envs/{{ item.env }}"
+    group: "{{ item.name }}"
+    owner: "{{ item.name }}"
+    mode: 0740
+    recurse: yes
   with_items: "{{ users }}"
 
 - name: Get dataset
@@ -156,23 +148,22 @@
     creates: "{{ notebooks_folder }}/data/heroes.csv"
 
 - name: Copy dataset to HDFS too
-  become: true
-  become_user: root
-  shell: hdfs dfs -put "{{ notebooks_folder }}/data" /tmp/
+  shell: hdfs dfs -put -f "{{ notebooks_folder }}/data" /tmp/
 
 - name: Copy jupyter start script
-  template: 
+  template:
     src: start-jupyter.sh
     dest: "/anaconda/envs/{{ item.env }}"
+    group: "{{ item.name }}"
+    owner: "{{ item.name }}"
     mode: 0775
   with_items: "{{ users }}"
 
-- name: Stop jupyter
+- name: Try to stop all jupyter processes
   shell: pkill jupyter
   ignore_errors: yes
 
 - name: Start jupyter
-  become: no
   shell: "nohup sudo -u {{item.name }} /anaconda/envs/{{ item.env }}/start-jupyter.sh >> /tmp/{{ item.name }}-jupyter.log &"
   with_items: "{{ users }}"
 
@@ -182,22 +173,15 @@
   register: spark_conf
 
 - name: place spark defaults
-  become: true
-  become_user: root
   template: src=spark-defaults.conf dest=/tmp/spark-defaults.conf
   when: spark_conf.stat.exists == True
 
 - name: get spark default contents
-  become: true
-  become_user: root
   shell: cat /tmp/spark-defaults.conf
   register: data
   when: spark_conf.stat.exists == True
 
-
 - name: insert/update configuration using a local file
-  become: true
-  become_user: root
   blockinfile:
     dest: "/usr/lib/spark/conf/spark-defaults.conf"
     block: |
@@ -205,8 +189,6 @@
   when: spark_conf.stat.exists == True
 
 - name: replace number of executors
-  become: true
-  become_user: root
   lineinfile:
      dest: "/usr/lib/spark/conf/spark-defaults.conf"
      regexp: 'spark\.executor\.instances'
@@ -214,8 +196,6 @@
   when: spark_conf.stat.exists == True
 
 - name: replace number of dynamic executors
-  become: true
-  become_user: root
   lineinfile:
      dest: "/usr/lib/spark/conf/spark-defaults.conf"
      regexp: 'dynamicAllocation\.maxExecutors'
@@ -223,8 +203,6 @@
   when: spark_conf.stat.exists == True
 
 - name: replace number of dynamic executors
-  become: true
-  become_user: root
   lineinfile:
      dest: "/usr/lib/spark/conf/spark-defaults.conf"
      regexp: 'port\.maxRetries'
@@ -232,7 +210,5 @@
   when: spark_conf.stat.exists == True
 
 - name: set SPARK_HOME
-  become: true
-  become_user: root
   lineinfile: dest=/etc/profile regexp="^export SPARK_HOME=" line="export SPARK_HOME=/usr/lib/spark"
   when: spark_conf.stat.exists == True

@@ -3,6 +3,8 @@
 - name: Ansible Playbook for google-dataproc-cluster
   hosts: master
   remote_user: "{{ deployer }}"
+  become: true
+  become_user: root
   vars_files:
     - vars/common.yml
   roles:
