@@ -12,6 +12,9 @@ We are currently in the process of making it grow to become more robust and serv
 You need to have the [gcloud CLI](https://cloud.google.com/sdk/downloads) installed.
 First authenticate and set the correct Google Cloud project. If you don't know your `project_id`, go to console.cloud.google.com and look for a project with trainings among your projects. Make sure you are logged on with your `@godatadriven.com` e-mail. Note: make sure to use the `project_id` and not the `project_name`.
 
+> Normally we use project_id `trainings-166610` (name: `trainings`) part of the organisation GoDataDriven. An admin (Gio
+ or Kris) can invite you. 
+
 ```bash
 gcloud auth login
 gcloud config set project <project_id>
@@ -33,6 +36,9 @@ Remember to put the
 You don't have to do this for a test run though. Then execute:
 
 ```bash
+# you might need to configure your shell for unicode settings in Python 3:
+export LC_ALL=en_US.UTF-8
+
 python deploy.py --workers <num_workers> [optional: --name <cluster-name>] # this will print out the master IP to the console
 ansible-playbook -i hosts --private-key gcloud_ansible playbook.yml
 ```
