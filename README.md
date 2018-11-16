@@ -24,6 +24,7 @@ Install the local environment and activate it
 
 ```
 conda env create -f environment.yml
+source activate provision-training-environment
 ```
 
 ## Usage
@@ -40,7 +41,7 @@ You don't have to do this for a test run though. Then execute:
 export LC_ALL=en_US.UTF-8
 
 python deploy.py --workers <num_workers> [optional: --name <cluster-name>] # this will print out the master IP to the console
-ansible-playbook -i hosts --private-key gcloud_ansible playbook.yml
+ansible-playbook --private-key gcloud_ansible playbook.yml
 ```
 
 You should be good to go now!
@@ -74,6 +75,13 @@ However, as all users have sudo privileges anyway, that doesn't really matter.
 When you are done, remove your cluster manually here:
 https://console.cloud.google.com/dataproc/clusters
 
+```bash
+# Find running cluster(s):
+gcloud dataproc clusters list --region europe-west1
+
+# Remove running cluster
+gcloud dataproc clusters delete --region europe-west1 cluster-******** 
+```
 
 ## Testing
 
