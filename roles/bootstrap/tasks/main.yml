@@ -6,32 +6,38 @@
   fail: msg="The master node should have Anaconda. Make sure the initialization-action has run! (install_conda.sh)"
   when: anaconda_present.stat.exists == False
 
+# - name: Update conda
+#   shell: "/anaconda/bin/conda update conda --quiet -y"
+
 - name: install packages
-  apt: name={{item}} state=present
-  with_items:
-    - build-essential
-    - libfreetype6-dev
-    - blt-dev
-    - pkg-config
-    - libssl1.0.0
-    - sudo
+  apt: 
+    name: "{{packages}}"
+    state: present
+  vars:
+    packages:
+      - build-essential
+      - libfreetype6-dev
+      - blt-dev
+      - pkg-config
+      - libssl1.1
+      - sudo
 
 - name: place requirements
   template:
     src: requirements.txt
     dest: "/tmp/requirements.txt"
 
-# - name: remove notebooks tmp folder
-#   become: true
-#   become_user: root
-#   file:
-#     state: absent
-#     path: "{{ notebooks_tmp_folder }}"
+- name: remove notebooks tmp folder
+  become: true
+  become_user: root
+  file:
+    state: absent
+    path: "{{ notebooks_tmp_folder }}"
 
-# - name: Creates notebooks folder directory
-#   file:
-#       path: "{{ notebooks_tmp_folder }}"
-#       state: directory
+- name: Creates notebooks folder directory
+  file:
+      path: "{{ notebooks_tmp_folder }}"
+      state: directory
 
 - name: remove notebooks folder
   file:
@@ -71,6 +77,9 @@
   user: name="{{ deployer }}" groups=wheel append=yes state=present createhome=yes
   when: user_home.stat.exists == False
 
+- name: Make the deployer user not require tty to allow user-switching for creating virtual-envs
+  template: src=sudoers_no_tty.j2 dest=/etc/sudoers.d/sudoers_no_tty
+
 - name: place notebooks
   synchronize:
     src: files/notebooks/
@@ -81,8 +90,23 @@
     src: files/answers/
     dest: "{{ notebooks_tmp_folder }}/answers/"
 
-- name: mkdir jupyter for every user
+- name: Make sure the users exists
+  user:
+    name: "{{ item.name }}"
+    shell: /bin/bash
+    append: yes
+  with_items: "{{ users }}"
+
+- name: The user must be owner of its own home-dir
+  file: path=/home/{{ item.name }}/ state=directory owner={{ item.name }} group={{ item.name }} mode=0775
+  with_items: "{{ users }}"
+
+- name: mkdir .jupyter for every user
   file: path=/home/{{ item.name }}/.jupyter state=directory owner={{ item.name }} group={{ item.name }} mode=0755
+  with_items: "{{ users }}"
+
+- name: mkdir .conda for every user
+  file: path=/home/{{ item.name }}/.conda state=directory owner={{ item.name }} group={{ item.name }} recurse=yes mode=0775
   with_items: "{{ users }}"
 
 - name: place jupyter file for every user
@@ -98,11 +122,7 @@
   with_items: "{{ users }}"
 
 - name: set ownership for notebooks
-  file:
-    path: "{{ notebooks_folder }}/{{ item.name }}"
-    group: "{{ item.name }}"
-    owner: "{{ item.name }}"
-    recurse: yes
+  file: path="{{ notebooks_folder }}/{{ item.name }}" group="{{ item.name }}" owner="{{ item.name }}" recurse=yes
   with_items: "{{ users }}"
 
 - name: Copy environment specs
@@ -113,31 +133,18 @@
   file:
     path: "/anaconda/envs/{{ item.env }}"
     state: directory
-    mode: 0777
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
   with_items: "{{ users }}"
 
-- name: Update conda
-  shell: "/anaconda/bin/conda update conda --quiet -y"
 
-- name: set full accessibility to conda
-  file:
-    path: "/anaconda"
-    mode: 0777
-    recurse: yes
-
-- name: Create virtual conda environment
-  shell: "SPARK_HOME={{ spark_home }} /anaconda/bin/conda env create -f /tmp/{{ item.name }}-environment.yml -p /anaconda/envs/{{ item.env }}"
+# I have tried a lot of options to create a Conda-env per user.
+# Conda creates various soft/hard/symlinks in eahc env. 
+# If you recursively modify access, the last user is applied to those symlinked-files and stuff breaks...
+- name: Create user specific virtual conda environment
+  shell: "sudo su {{ item.name }} -c '/anaconda/bin/conda env create -f /tmp/{{ item.name }}-environment.yml -p /anaconda/envs/{{ item.env }}'"
   args:
     creates: "/anaconda/envs/{{ item.env }}/bin"
-  with_items: "{{ users }}"
-
-- name: set ownership for conda envs
-  file:
-    path: "/anaconda/envs/{{ item.env }}"
-    group: "{{ item.name }}"
-    owner: "{{ item.name }}"
-    mode: 0740
-    recurse: yes
   with_items: "{{ users }}"
 
 - name: Get dataset
@@ -164,7 +171,7 @@
   ignore_errors: yes
 
 - name: Start jupyter
-  shell: "nohup sudo -u {{item.name }} /anaconda/envs/{{ item.env }}/start-jupyter.sh >> /tmp/{{ item.name }}-jupyter.log &"
+  shell: "nohup sudo -u {{item.name}} /anaconda/envs/{{ item.env }}/start-jupyter.sh >> /tmp/{{ item.name }}-jupyter.log &"
   with_items: "{{ users }}"
 
 - name: Check that Spark conf is present
