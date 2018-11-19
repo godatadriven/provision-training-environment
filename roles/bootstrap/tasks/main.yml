@@ -6,11 +6,19 @@
   fail: msg="The master node should have Anaconda. Make sure the initialization-action has run! (install_conda.sh)"
   when: anaconda_present.stat.exists == False
 
-# - name: Update conda
-#   shell: "/anaconda/bin/conda update conda --quiet -y"
+ - name: Update conda
+   shell: "/anaconda/bin/conda update conda --quiet -y"
+
+- name: Default enable the 'll'-alias for new user profiles.
+  lineinfile:
+    dest: /etc/skel/.bashrc
+    state: present
+    regexp: '^#alias ll.*'
+    insertafter: '^#some more ls aliases'
+    line: "alias ll='ls -lhA'"
 
 - name: install packages
-  apt: 
+  apt:
     name: "{{packages}}"
     state: present
   vars:
@@ -117,6 +125,7 @@
   file: path={{notebooks_folder}}/{{ item.name }} state=directory owner={{ item.name }} group={{ item.name }} mode=0777
   with_items: "{{ users }}"
 
+# We could also use `sync` to update or overwrite and delete files.
 - name: copy notebooks and answers for every user
   shell: /bin/cp -R {{ notebooks_tmp_folder }}/* {{ notebooks_folder }}/{{ item.name }}/
   with_items: "{{ users }}"
@@ -139,7 +148,7 @@
 
 
 # I have tried a lot of options to create a Conda-env per user.
-# Conda creates various soft/hard/symlinks in eahc env. 
+# Conda creates various soft/hard/symlinks in each env.
 # If you recursively modify access, the last user is applied to those symlinked-files and stuff breaks...
 - name: Create user specific virtual conda environment
   shell: "sudo su {{ item.name }} -c '/anaconda/bin/conda env create -f /tmp/{{ item.name }}-environment.yml -p /anaconda/envs/{{ item.env }}'"
@@ -154,7 +163,19 @@
     dest: "{{ notebooks_folder }}/data"
     creates: "{{ notebooks_folder }}/data/heroes.csv"
 
-- name: Copy dataset to HDFS too
+- name: And the (small 1Mb) Movielens dataset
+  src: http://files.grouplens.org/datasets/movielens/ml-latest-small.zip
+  remote_src: yes
+  dest: "{{ notebooks_folder }}/data"
+  creates: "{{ notebooks_folder }}/data/ml-latest-small/movies.csv"
+
+- name: And also the large (220Mb) Movielens dataset
+  src: http://files.grouplens.org/datasets/movielens/ml-latest.zip
+  remote_src: yes
+  dest: "{{ notebooks_folder }}/data"
+  creates: "{{ notebooks_folder }}/data/ml-latest/movies.csv"
+
+- name: Copy all datasets to HDFS too
   shell: hdfs dfs -put -f "{{ notebooks_folder }}/data" /tmp/
 
 - name: Copy jupyter start script
