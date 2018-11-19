@@ -6,8 +6,8 @@
   fail: msg="The master node should have Anaconda. Make sure the initialization-action has run! (install_conda.sh)"
   when: anaconda_present.stat.exists == False
 
- - name: Update conda
-   shell: "/anaconda/bin/conda update conda --quiet -y"
+- name: Update conda
+  shell: "/anaconda/bin/conda update conda --quiet -y"
 
 - name: Default enable the 'll'-alias for new user profiles.
   lineinfile:
