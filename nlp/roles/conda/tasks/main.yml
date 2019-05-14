@@ -20,7 +20,7 @@
     creates: "/miniconda/envs/{{ conda_environment_name }}"
 
 - name: Download english spacy defs
-  shell: "/miniconda/envs/{{ conda_environment_name }}/bin/python -m spacy download en"
+  shell: "/miniconda/envs/{{ conda_environment_name }}/bin/python -m spacy download en_core_web_md"
 
 - name: create notebook, config and data dir
   file: 
