@@ -117,7 +117,7 @@ def create_machines(project_id, name_prefix, instances):
     for instance in range(0,instances):
     	machine_name = f"{name_prefix}-{instance}"
     	to_run = f"""gcloud beta compute instances create {machine_name} 
-    	--subnet=default --zone=europe-west1-c
+    	--zone=europe-west1-c
     	--machine-type=n1-standard-4
     	--tags training-instance
     	--boot-disk-size=20GB --boot-disk-type=pd-standard --boot-disk-device-name={machine_name}
