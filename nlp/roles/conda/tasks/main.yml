@@ -34,7 +34,7 @@
 
 - name: Get dataset
   unarchive:
-    src: https://storage.googleapis.com/gdd-trainings-bucket/accelerator-lecture07_nlp-data.tar.gz
+    src: https://storage.googleapis.com/godatadriven-academy-trainings-data/accelerator-lecture07-data.tar.gz
     remote_src: yes
     dest: "{{ notebook_folder }}"
     creates: "{{ notebook_folder }}/data"
