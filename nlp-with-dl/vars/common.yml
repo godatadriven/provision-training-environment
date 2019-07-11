@@ -1,0 +1,25 @@
+deployer: deploy
+users:
+  - student00
+  - student01
+  - student02
+  - student03
+  - student04
+  - student05
+  - student06
+  - student07
+  - student08
+  - student09
+  - student10
+  - student11
+  - student12
+  - student13
+  - student14
+  - student15
+  - student16
+root_folder: /training
+notebook_folder: /training/nlp-with-dl
+logs_folder: /training/logs
+notebook_port: 5000
+notebook_token: nlp-with-dl
+conda_environment_name: nlp-with-dl
